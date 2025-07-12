@@ -15,7 +15,9 @@ function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedViewDate, setSelectedViewDate] = useState(new Date());
   const [editingAppointment, setEditingAppointment] = useState(null);
-
+  
+  const [filterBy, setFilterBy] = useState('none'); // 'none', 'patient', 'doctor'
+  const [filterValue, setFilterValue] = useState('');
 
   useEffect(() => {
     const checkMobile = () => {
@@ -31,6 +33,38 @@ function CalendarPage() {
   useEffect(() => {
     localStorage.setItem('appointments', JSON.stringify(appointments));
   }, [appointments]);
+
+  const getUniqueValues = () => {
+    const patients = new Set();
+    const doctors = new Set();
+    
+    Object.values(appointments).forEach(dayAppointments => {
+      dayAppointments.forEach(appointment => {
+        patients.add(appointment.patient);
+        doctors.add(appointment.doctor);
+      });
+    });
+    
+    return {
+      patients: Array.from(patients).sort(),
+      doctors: Array.from(doctors).sort()
+    };
+  };
+
+  const filterAppointments = (dayAppointments) => {
+    if (filterBy === 'none' || !filterValue) {
+      return dayAppointments;
+    }
+    
+    return dayAppointments.filter(appointment => {
+      if (filterBy === 'patient') {
+        return appointment.patient.toLowerCase().includes(filterValue.toLowerCase());
+      } else if (filterBy === 'doctor') {
+        return appointment.doctor.toLowerCase().includes(filterValue.toLowerCase());
+      }
+      return true;
+    });
+  };
 
   function handleAddAppointment(date, data) {
     const key = date.toISOString().split('T')[0];
@@ -92,7 +126,9 @@ function CalendarPage() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
- 
+  const { patients, doctors } = getUniqueValues();
+
+
   const prevMonth = month === 0 ? 11 : month - 1;
   const prevYear = month === 0 ? year - 1 : year;
   const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
@@ -111,6 +147,7 @@ function CalendarPage() {
     const date = new Date(year, month, d);
     const key = date.toISOString().split('T')[0];
     const dayAppointments = appointments[key] || [];
+    const filteredAppointments = filterAppointments(dayAppointments);
     const isToday = new Date().toDateString() === date.toDateString();
     const isSelected = selectedViewDate.toDateString() === date.toDateString();
     const isPast = date < new Date().setHours(0, 0, 0, 0);
@@ -121,7 +158,6 @@ function CalendarPage() {
         className={`calendar-day current-month ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''} ${isPast ? 'past' : ''}`}
         onClick={() => {
           setSelectedViewDate(date);
-         
           if (!isPast) {
             setSelectedDate(date);
           }
@@ -129,7 +165,7 @@ function CalendarPage() {
       >
         <div className="day-number">{d}</div>
         <div className="appointments-list">
-          {dayAppointments.map((appointment, i) => (
+          {filteredAppointments.map((appointment, i) => (
             <div key={i} className="appointment-item">
               {formatTime(appointment.time)} - {appointment.patient}
             </div>
@@ -161,14 +197,18 @@ function CalendarPage() {
             onAddAppointment={handleAddAppointment}
             onEditAppointment={handleEditAppointment}
             onDeleteAppointment={handleDeleteAppointment}
+            filterBy={filterBy}
+            filterValue={filterValue}
+            onFilterChange={(newFilterBy, newFilterValue) => {
+              setFilterBy(newFilterBy);
+              setFilterValue(newFilterValue);
+            }}
+            getUniqueValues={getUniqueValues}
           />
         ) : (
           <div className="calendar-container">
-     
             <div className="main-content">
-           
               <div className="calendar-section">
-       
                 <div className="calendar-nav">
                   <button 
                     className="nav-btn"
@@ -187,15 +227,72 @@ function CalendarPage() {
                   </button>
                 </div>
 
+                
+                <div className="filter-controls">
+                  <div className="filter-group">
+                    <label>Filter by:</label>
+                    <select 
+                      value={filterBy} 
+                      onChange={(e) => {
+                        setFilterBy(e.target.value);
+                        setFilterValue('');
+                      }}
+                      className="filter-select"
+                    >
+                      <option value="none">No Filter</option>
+                      <option value="patient">Patient</option>
+                      <option value="doctor">Doctor</option>
+                    </select>
+                  </div>
+
+                  {filterBy !== 'none' && (
+                    <div className="filter-group">
+                      {filterBy === 'patient' ? (
+                        <select 
+                          value={filterValue} 
+                          onChange={(e) => setFilterValue(e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="">All Patients</option>
+                          {patients.map(patient => (
+                            <option key={patient} value={patient}>{patient}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select 
+                          value={filterValue} 
+                          onChange={(e) => setFilterValue(e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="">All Doctors</option>
+                          {doctors.map(doctor => (
+                            <option key={doctor} value={doctor}>Dr. {doctor}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
+
+                  {(filterBy !== 'none' && filterValue) && (
+                    <button 
+                      className="clear-filter-btn"
+                      onClick={() => {
+                        setFilterBy('none');
+                        setFilterValue('');
+                      }}
+                      title="Clear Filter"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
                 <div className="calendar-grid">
-         
                   {dayNames.map(day => (
                     <div key={day} className="day-header">
                       {day}
                     </div>
                   ))}
-                  
-
                   {boxes}
                 </div>
               </div>
@@ -215,12 +312,18 @@ function CalendarPage() {
                   {(() => {
                     const selectedKey = selectedViewDate.toISOString().split('T')[0];
                     const selectedAppointments = appointments[selectedKey] || [];
+                    const filteredSelectedAppointments = filterAppointments(selectedAppointments);
                     const isPastDate = selectedViewDate < new Date().setHours(0, 0, 0, 0);
                     
-                    if (selectedAppointments.length === 0) {
+                    if (filteredSelectedAppointments.length === 0) {
                       return (
                         <div className="no-appointments-selected">
-                          <p>No appointments scheduled for this date</p>
+                          <p>
+                            {selectedAppointments.length === 0 
+                              ? "No appointments scheduled for this date"
+                              : "No appointments match the current filter"
+                            }
+                          </p>
                           {isPastDate && (
                             <p className="past-date-notice">Past dates cannot have new appointments added</p>
                           )}
@@ -228,25 +331,32 @@ function CalendarPage() {
                       );
                     }
 
-                    return selectedAppointments.map((appointment, index) => (
-                      <div key={index} className="appointment-card">
-                        <div className="appointment-main-content">
-                          <div className="appointment-time-large">
-                            {formatTime(appointment.time)}
+                    return filteredSelectedAppointments.map((appointment, index) => {
+                      
+                      const originalIndex = selectedAppointments.findIndex(app => 
+                        app.time === appointment.time && 
+                        app.patient === appointment.patient && 
+                        app.doctor === appointment.doctor
+                      );
+
+                      return (
+                        <div key={originalIndex} className="appointment-card">
+                          <div className="appointment-main-content">
+                            <div className="appointment-time-large">
+                              {formatTime(appointment.time)}
+                            </div>
+                            <div className="appointment-info">
+                              <div className="patient-name-large">{appointment.patient}</div>
+                              <div className="doctor-name-large">Dr. {appointment.doctor}</div>
+                            </div>
+                            <div className="appointment-status-large">
+                              {isPastDate ? 'Completed' : 'Scheduled'}
+                            </div>
                           </div>
-                          <div className="appointment-info">
-                            <div className="patient-name-large">{appointment.patient}</div>
-                            <div className="doctor-name-large">Dr. {appointment.doctor}</div>
-                          </div>
-                          <div className="appointment-status-large">
-                            {isPastDate ? 'Completed' : 'Scheduled'}
-                          </div>
-                        </div>
-                        {!isPastDate && (
                           <div className="appointment-actions">
                             <button 
                               className="action-btn edit-btn"
-                              onClick={() => startEditAppointment(appointment, index)}
+                              onClick={() => startEditAppointment(appointment, originalIndex)}
                               title="Edit Appointment"
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -256,7 +366,7 @@ function CalendarPage() {
                             </button>
                             <button 
                               className="action-btn delete-btn"
-                              onClick={() => handleDeleteAppointment(selectedViewDate, index)}
+                              onClick={() => handleDeleteAppointment(selectedViewDate, originalIndex)}
                               title="Delete Appointment"
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -265,9 +375,9 @@ function CalendarPage() {
                               Delete
                             </button>
                           </div>
-                        )}
-                      </div>
-                    ));
+                        </div>
+                      );
+                    });
                   })()}
                 </div>
 
@@ -358,6 +468,69 @@ function CalendarPage() {
               padding-bottom: 10px;
               border-bottom: 1px solid var(--border-color);
               flex-shrink: 0;
+            }
+
+            /* Filter Controls */
+            .filter-controls {
+              display: flex;
+              align-items: center;
+              gap: 15px;
+              margin-bottom: 15px;
+              padding: 10px;
+              background-color: var(--background-tertiary);
+              border-radius: 6px;
+              border: 1px solid var(--border-color);
+              flex-shrink: 0;
+            }
+
+            .filter-group {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            }
+
+            .filter-group label {
+              font-size: 0.85rem;
+              font-weight: 500;
+              color: var(--text-secondary);
+              white-space: nowrap;
+            }
+
+            .filter-select {
+              padding: 4px 8px;
+              border: 1px solid var(--border-color);
+              border-radius: 4px;
+              background-color: var(--card-background);
+              color: var(--text-color);
+              font-size: 0.8rem;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            }
+
+            .filter-select:focus {
+              outline: none;
+              border-color: var(--primary-color);
+              box-shadow: 0 0 0 2px rgba(38, 166, 154, 0.2);
+            }
+
+            .clear-filter-btn {
+              background-color: var(--primary-color);
+              color: white;
+              border: none;
+              border-radius: 50%;
+              width: 24px;
+              height: 24px;
+              cursor: pointer;
+              font-size: 0.8rem;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.2s ease;
+            }
+
+            .clear-filter-btn:hover {
+              background-color: var(--primary-dark);
+              transform: scale(1.1);
             }
 
             .nav-btn {
@@ -754,6 +927,11 @@ function CalendarPage() {
               .calendar-grid {
                 grid-template-rows: auto repeat(6, 80px);
               }
+
+              .filter-controls {
+                flex-wrap: wrap;
+                gap: 10px;
+              }
             }
 
             @media (max-width: 768px) {
@@ -792,6 +970,17 @@ function CalendarPage() {
 
               .appointment-patient {
                 font-size: 0.55rem;
+              }
+
+              .filter-controls {
+                padding: 8px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+              }
+
+              .filter-group {
+                justify-content: space-between;
               }
             }
           `}

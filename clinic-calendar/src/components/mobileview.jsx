@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
 import AppointmentForm from './appointmentform';
 
-function MobileView({ appointments, onAddAppointment, onEditAppointment, onDeleteAppointment }) {
+function MobileView({ 
+  appointments, 
+  onAddAppointment, 
+  onEditAppointment, 
+  onDeleteAppointment,
+  filterBy = 'none',
+  filterValue = '',
+  onFilterChange,
+  getUniqueValues
+}) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [editingAppointment, setEditingAppointment] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', { 
@@ -35,9 +45,27 @@ function MobileView({ appointments, onAddAppointment, onEditAppointment, onDelet
     setCurrentDate(new Date());
   };
 
+  const filterAppointments = (dayAppointments) => {
+    if (filterBy === 'none' || !filterValue) {
+      return dayAppointments;
+    }
+    
+    return dayAppointments.filter(appointment => {
+      if (filterBy === 'patient') {
+        return appointment.patient.toLowerCase().includes(filterValue.toLowerCase());
+      } else if (filterBy === 'doctor') {
+        return appointment.doctor.toLowerCase().includes(filterValue.toLowerCase());
+      }
+      return true;
+    });
+  };
+
   const dateKey = currentDate.toISOString().split('T')[0];
   const dayAppointments = appointments[dateKey] || [];
+  const filteredAppointments = filterAppointments(dayAppointments);
   const isPastDate = currentDate < new Date().setHours(0, 0, 0, 0);
+
+  const { patients, doctors } = getUniqueValues ? getUniqueValues() : { patients: [], doctors: [] };
 
   const formatTime = (time24) => {
     if (!time24) return '';
@@ -89,57 +117,144 @@ function MobileView({ appointments, onAddAppointment, onEditAppointment, onDelet
         <button className="today-button" onClick={goToToday}>
           Today
         </button>
+        <button 
+          className={`filter-toggle-button ${showFilters ? 'active' : ''}`}
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+          </svg>
+          Filter
+        </button>
       </div>
 
- 
+      {showFilters && (
+        <div className="filter-controls-mobile">
+          <div className="filter-row">
+            <label>Filter by:</label>
+            <select 
+              value={filterBy} 
+              onChange={(e) => {
+                const newFilterBy = e.target.value;
+                onFilterChange(newFilterBy, '');
+              }}
+              className="filter-select-mobile"
+            >
+              <option value="none">No Filter</option>
+              <option value="patient">Patient</option>
+              <option value="doctor">Doctor</option>
+            </select>
+          </div>
+
+          {filterBy !== 'none' && (
+            <div className="filter-row">
+              {filterBy === 'patient' ? (
+                <select 
+                  value={filterValue} 
+                  onChange={(e) => onFilterChange(filterBy, e.target.value)}
+                  className="filter-select-mobile"
+                >
+                  <option value="">All Patients</option>
+                  {patients.map(patient => (
+                    <option key={patient} value={patient}>{patient}</option>
+                  ))}
+                </select>
+              ) : (
+                <select 
+                  value={filterValue} 
+                  onChange={(e) => onFilterChange(filterBy, e.target.value)}
+                  className="filter-select-mobile"
+                >
+                  <option value="">All Doctors</option>
+                  {doctors.map(doctor => (
+                    <option key={doctor} value={doctor}>Dr. {doctor}</option>
+                  ))}
+                </select>
+              )}
+              {filterValue && (
+                <button 
+                  className="clear-filter-mobile"
+                  onClick={() => onFilterChange('none', '')}
+                  title="Clear Filter"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="appointments-section">
-        <h3>Appointments ({dayAppointments.length})</h3>
-        {dayAppointments.length === 0 ? (
+        <h3>
+          Appointments ({filteredAppointments.length}
+          {dayAppointments.length !== filteredAppointments.length && 
+            ` of ${dayAppointments.length}`})
+          {filterBy !== 'none' && filterValue && (
+            <span className="filter-indicator">
+              - Filtered by {filterBy}: {filterBy === 'doctor' ? 'Dr. ' : ''}{filterValue}
+            </span>
+          )}
+        </h3>
+        {filteredAppointments.length === 0 ? (
           <div className="no-appointments">
-            <p>No appointments scheduled for this day</p>
+            <p>
+              {dayAppointments.length === 0 
+                ? "No appointments scheduled for this day"
+                : "No appointments match the current filter"
+              }
+            </p>
           </div>
         ) : (
           <div className="appointments-list">
-            {dayAppointments.map((appointment, index) => (
-              <div key={index} className="appointment-card">
-                <div className="appointment-main-content">
-                  <div className="appointment-time">
-                    {formatTime(appointment.time)}
+            {filteredAppointments.map((appointment, index) => {
+              const originalIndex = dayAppointments.findIndex(app => 
+                app.time === appointment.time && 
+                app.patient === appointment.patient && 
+                app.doctor === appointment.doctor
+              );
+              
+              return (
+                <div key={originalIndex} className="appointment-card">
+                  <div className="appointment-main-content">
+                    <div className="appointment-time">
+                      {formatTime(appointment.time)}
+                    </div>
+                    <div className="appointment-details">
+                      <div className="patient-name">{appointment.patient}</div>
+                      <div className="doctor-name">Dr. {appointment.doctor}</div>
+                    </div>
+                    <div className="appointment-status">
+                      {isPastDate ? 'Completed' : 'Scheduled'}
+                    </div>
                   </div>
-                  <div className="appointment-details">
-                    <div className="patient-name">{appointment.patient}</div>
-                    <div className="doctor-name">Dr. {appointment.doctor}</div>
-                  </div>
-                  <div className="appointment-status">
-                    {isPastDate ? 'Completed' : 'Scheduled'}
-                  </div>
+                  {!isPastDate && (
+                    <div className="appointment-actions">
+                      <button 
+                        className="action-btn edit-btn"
+                        onClick={() => startEditAppointment(appointment, originalIndex)}
+                        title="Edit Appointment"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                        Edit
+                      </button>
+                      <button 
+                        className="action-btn delete-btn"
+                        onClick={() => handleDeleteAppointment(originalIndex)}
+                        title="Delete Appointment"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {!isPastDate && (
-                  <div className="appointment-actions">
-                    <button 
-                      className="action-btn edit-btn"
-                      onClick={() => startEditAppointment(appointment, index)}
-                      title="Edit Appointment"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                      </svg>
-                      Edit
-                    </button>
-                    <button 
-                      className="action-btn delete-btn"
-                      onClick={() => handleDeleteAppointment(index)}
-                      title="Delete Appointment"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                      </svg>
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -267,6 +382,99 @@ function MobileView({ appointments, onAddAppointment, onEditAppointment, onDelet
             color: white;
           }
 
+          .filter-toggle-button {
+            padding: 12px 20px;
+            background-color: var(--card-background);
+            border: 2px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: var(--body-weight-medium);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+
+          .filter-toggle-button:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+          }
+
+          .filter-toggle-button.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+          }
+
+          .filter-controls-mobile {
+            background-color: var(--card-background);
+            margin: 0 10px 20px 10px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+          }
+
+          .filter-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+          }
+
+          .filter-row:last-child {
+            margin-bottom: 0;
+          }
+
+          .filter-row label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            min-width: 70px;
+          }
+
+          .filter-select-mobile {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--background-secondary);
+            color: var(--text-color);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          }
+
+          .filter-select-mobile:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(38, 166, 154, 0.2);
+          }
+
+          .clear-filter-mobile {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+          }
+
+          .clear-filter-mobile:hover {
+            background-color: var(--primary-dark);
+            transform: scale(1.1);
+          }
+
           .appointments-section {
             padding: 0 10px 20px 10px;
           }
@@ -277,6 +485,15 @@ function MobileView({ appointments, onAddAppointment, onEditAppointment, onDelet
             font-weight: var(--heading-weight-semibold);
             color: var(--text-color);
             margin: 0 0 15px 0;
+            line-height: 1.4;
+          }
+
+          .filter-indicator {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: var(--body-weight-normal);
+            color: var(--primary-color);
+            margin-top: 2px;
           }
 
           .no-appointments {
