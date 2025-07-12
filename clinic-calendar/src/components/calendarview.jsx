@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import AppointmentForm from './appointmentform';
+import MobileView from './mobileview';
+
+
 
 function CalendarView() {
   const [appointments, setAppointments] = useState(() => {
@@ -8,6 +11,19 @@ function CalendarView() {
   });
 
   const [selectedDate, setSelectedDate] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('appointments', JSON.stringify(appointments));
@@ -19,6 +35,10 @@ function CalendarView() {
     updated[key] = [...(updated[key] || []), data];
     setAppointments(updated);
   }
+
+
+
+
 
   const today = new Date();
   const year = today.getFullYear();
@@ -51,17 +71,26 @@ function CalendarView() {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>Appointment Calendar</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px' }}>
-        {boxes}
-      </div>
-      {selectedDate && (
-        <AppointmentForm
-          date={selectedDate}
-          onClose={() => setSelectedDate(null)}
-          onSave={handleAddAppointment}
+    <div>
+      {isMobile ? (
+        <MobileView 
+          appointments={appointments}
+          onAddAppointment={handleAddAppointment}
         />
+      ) : (
+        <div style={{ padding: '20px' }}>
+          <h2>Appointment Calendar</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px' }}>
+            {boxes}
+          </div>
+          {selectedDate && (
+            <AppointmentForm
+              date={selectedDate}
+              onClose={() => setSelectedDate(null)}
+              onSave={handleAddAppointment}
+            />
+          )}
+        </div>
       )}
     </div>
   );

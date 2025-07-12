@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { patients, doctors } from '../data/lists';
 
-function appointmentform({ date, onClose, onSave }) {
+function AppointmentForm({ date, onClose, onSave }) {
   const [patient, setPatient] = useState('');
   const [doctor, setDoctor] = useState('');
   const [time, setTime] = useState('');
@@ -52,4 +52,4 @@ function appointmentform({ date, onClose, onSave }) {
   );
 }
 
-export default appointmentform;
+export default AppointmentForm;
