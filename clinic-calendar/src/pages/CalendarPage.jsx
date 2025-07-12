@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import AppointmentForm from './appointmentform';
-import MobileView from './mobileview';
+import AppointmentForm from '../components/appointmentform';
+import MobileView from '../components/mobileview';
 
-
-
-function CalendarView() {
+function CalendarPage() {
   const [appointments, setAppointments] = useState(() => {
     const saved = localStorage.getItem('appointments');
     return saved ? JSON.parse(saved) : {};
@@ -35,10 +33,6 @@ function CalendarView() {
     updated[key] = [...(updated[key] || []), data];
     setAppointments(updated);
   }
-
-
-
-
 
   const today = new Date();
   const year = today.getFullYear();
@@ -96,4 +90,4 @@ function CalendarView() {
   );
 }
 
-export default CalendarView;
+export default CalendarPage;

@@ -1,14 +1,14 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import LoginForm from './components/loginform';
-import CalendarView from './components/calendarview';
+import LoginPage from './pages/LoginPage';
+import CalendarPage from './pages/CalendarPage';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LoginForm />} />
-        <Route path="/calendar" element={<CalendarView />} />
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
       </Routes>
     </BrowserRouter>
   );
