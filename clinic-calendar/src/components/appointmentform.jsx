@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { patients, doctors } from '../data/lists';
 
-function AppointmentForm({ date, onClose, onSave }) {
-  const [patient, setPatient] = useState('');
-  const [doctor, setDoctor] = useState('');
-  const [time, setTime] = useState('');
+function AppointmentForm({ date, editingAppointment, onClose, onSave }) {
+  const [patient, setPatient] = useState(editingAppointment?.patient || '');
+  const [doctor, setDoctor] = useState(editingAppointment?.doctor || '');
+  const [time, setTime] = useState(editingAppointment?.time || '');
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -29,7 +29,7 @@ function AppointmentForm({ date, onClose, onSave }) {
     <div className="modal-overlay">
       <div className="appointment-form">
         <div className="form-header">
-          <h3>Schedule Appointment</h3>
+          <h3>{editingAppointment ? 'Edit Appointment' : 'Schedule Appointment'}</h3>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
 
@@ -80,7 +80,7 @@ function AppointmentForm({ date, onClose, onSave }) {
               Cancel
             </button>
             <button type="submit" className="save-btn">
-              Schedule Appointment
+              {editingAppointment ? 'Update Appointment' : 'Schedule Appointment'}
             </button>
           </div>
         </form>
@@ -99,16 +99,19 @@ function AppointmentForm({ date, onClose, onSave }) {
               align-items: center;
               z-index: 1000;
               padding: 20px;
+              box-sizing: border-box;
             }
 
             .appointment-form {
-              background: white;
+              background: var(--card-background);
               border-radius: 16px;
               width: 100%;
               max-width: 480px;
-              box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+              box-shadow: var(--shadow-hover);
               overflow: hidden;
               animation: slideUp 0.3s ease-out;
+              margin: auto;
+              position: relative;
             }
 
             @keyframes slideUp {
@@ -123,7 +126,7 @@ function AppointmentForm({ date, onClose, onSave }) {
             }
 
             .form-header {
-              background: linear-gradient(135deg, #009688 0%, #00796B 100%);
+              background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
               color: white;
               padding: 24px;
               display: flex;
@@ -159,9 +162,9 @@ function AppointmentForm({ date, onClose, onSave }) {
             }
 
             .selected-date {
-              background-color: #f8f9fa;
+              background-color: var(--background-tertiary);
               padding: 16px 24px;
-              border-bottom: 1px solid #e9ecef;
+              border-bottom: 1px solid var(--border-color);
               font-size: 1rem;
               color: var(--text-color);
             }
@@ -186,12 +189,12 @@ function AppointmentForm({ date, onClose, onSave }) {
             .form-group input {
               width: 100%;
               padding: 12px 16px;
-              border: 2px solid #e9ecef;
+              border: 2px solid var(--border-color);
               border-radius: 8px;
               font-size: 1rem;
               color: var(--text-color);
-              background-color: white;
-              transition: border-color 0.3s ease;
+              background-color: var(--input-background);
+              transition: all 0.3s ease;
               box-sizing: border-box;
             }
 
@@ -199,7 +202,13 @@ function AppointmentForm({ date, onClose, onSave }) {
             .form-group input:focus {
               outline: none;
               border-color: var(--primary-color);
-              box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
+              background-color: var(--background-color);
+              box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.1);
+            }
+
+            .form-group select option {
+              background-color: var(--card-background);
+              color: var(--text-color);
             }
 
             .form-actions {
@@ -211,8 +220,8 @@ function AppointmentForm({ date, onClose, onSave }) {
             .cancel-btn {
               flex: 1;
               padding: 12px 20px;
-              background-color: #f8f9fa;
-              border: 2px solid #e9ecef;
+              background-color: var(--background-tertiary);
+              border: 2px solid var(--border-color);
               color: var(--text-color);
               border-radius: 8px;
               font-size: 1rem;
@@ -222,8 +231,9 @@ function AppointmentForm({ date, onClose, onSave }) {
             }
 
             .cancel-btn:hover {
-              background-color: #e9ecef;
-              border-color: #dee2e6;
+              background-color: var(--background-secondary);
+              border-color: var(--border-light);
+              transform: translateY(-1px);
             }
 
             .save-btn {
@@ -240,15 +250,24 @@ function AppointmentForm({ date, onClose, onSave }) {
             }
 
             .save-btn:hover {
-              background-color: #00796B;
+              background-color: var(--primary-dark);
               transform: translateY(-2px);
-              box-shadow: 0 4px 12px rgba(0, 150, 136, 0.3);
+              box-shadow: 0 4px 12px rgba(38, 166, 154, 0.3);
             }
 
             @media (max-width: 768px) {
+              .modal-overlay {
+                padding: 10px;
+                align-items: center;
+                justify-content: center;
+              }
+
               .appointment-form {
                 max-width: 100%;
-                margin: 0 10px;
+                width: calc(100% - 20px);
+                margin: 0 auto;
+                max-height: 90vh;
+                overflow-y: auto;
               }
 
               .form-header {
@@ -261,6 +280,46 @@ function AppointmentForm({ date, onClose, onSave }) {
 
               .appointment-form form {
                 padding: 20px;
+              }
+            }
+
+            @media (max-width: 480px) {
+              .modal-overlay {
+                padding: 5px;
+              }
+
+              .appointment-form {
+                width: calc(100% - 10px);
+                border-radius: 12px;
+              }
+
+              .form-header {
+                padding: 16px;
+              }
+
+              .form-header h3 {
+                font-size: 1.2rem;
+              }
+
+              .appointment-form form {
+                padding: 16px;
+              }
+
+              .form-group select,
+              .form-group input {
+                padding: 10px 12px;
+                font-size: 0.95rem;
+              }
+
+              .form-actions {
+                flex-direction: column;
+                gap: 8px;
+              }
+
+              .cancel-btn,
+              .save-btn {
+                flex: none;
+                width: 100%;
               }
             }
           `}

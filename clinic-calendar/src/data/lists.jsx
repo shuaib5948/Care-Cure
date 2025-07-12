@@ -1,2 +1,2 @@
-export const patients = ['arun', 'shahul', 'geetha'];
-export const doctors = ['Dr. abdurahman', 'Dr. stany'];
+export const patients = ['Arun', 'Shahul', 'Geetha'];
+export const doctors = ['Abdurahman', 'stany','Fazil'];

@@ -14,8 +14,9 @@ function CalendarPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedViewDate, setSelectedViewDate] = useState(new Date());
+  const [editingAppointment, setEditingAppointment] = useState(null);
 
-  // Check if device is mobile
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -38,6 +39,30 @@ function CalendarPage() {
     setAppointments(updated);
   }
 
+  function handleEditAppointment(date, appointmentIndex, newData) {
+    const key = date.toISOString().split('T')[0];
+    const updated = { ...appointments };
+    updated[key][appointmentIndex] = newData;
+    setAppointments(updated);
+  }
+
+  function handleDeleteAppointment(date, appointmentIndex) {
+    if (window.confirm('Are you sure you want to delete this appointment?')) {
+      const key = date.toISOString().split('T')[0];
+      const updated = { ...appointments };
+      updated[key].splice(appointmentIndex, 1);
+      if (updated[key].length === 0) {
+        delete updated[key];
+      }
+      setAppointments(updated);
+    }
+  }
+
+  function startEditAppointment(appointment, index) {
+    setEditingAppointment({ ...appointment, index });
+    setSelectedDate(selectedViewDate);
+  }
+
   const navigateMonth = (direction) => {
     const newMonth = new Date(currentMonth);
     newMonth.setMonth(currentMonth.getMonth() + direction);
@@ -58,7 +83,6 @@ function CalendarPage() {
 
   const boxes = [];
 
-  // Helper function to convert 24-hour time to 12-hour AM/PM format
   const formatTime = (time24) => {
     if (!time24) return '';
     const [hours, minutes] = time24.split(':');
@@ -68,7 +92,7 @@ function CalendarPage() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  // Previous month's trailing days
+ 
   const prevMonth = month === 0 ? 11 : month - 1;
   const prevYear = month === 0 ? year - 1 : year;
   const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
@@ -82,7 +106,7 @@ function CalendarPage() {
     );
   }
 
-  // Current month days
+
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month, d);
     const key = date.toISOString().split('T')[0];
@@ -97,7 +121,7 @@ function CalendarPage() {
         className={`calendar-day current-month ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''} ${isPast ? 'past' : ''}`}
         onClick={() => {
           setSelectedViewDate(date);
-          // Only allow setting selectedDate for current/future dates
+         
           if (!isPast) {
             setSelectedDate(date);
           }
@@ -115,8 +139,7 @@ function CalendarPage() {
     );
   }
 
-  // Next month's leading days to fill the grid
-  const totalCells = 42; // 6 rows × 7 days
+  const totalCells = 42; 
   const remainingCells = totalCells - boxes.length;
   
   for (let d = 1; d <= remainingCells; d++) {
@@ -136,14 +159,16 @@ function CalendarPage() {
           <MobileView 
             appointments={appointments}
             onAddAppointment={handleAddAppointment}
+            onEditAppointment={handleEditAppointment}
+            onDeleteAppointment={handleDeleteAppointment}
           />
         ) : (
           <div className="calendar-container">
-            {/* Main Content - Calendar and Today's Appointments */}
+     
             <div className="main-content">
-              {/* Calendar Section */}
+           
               <div className="calendar-section">
-                {/* Calendar Navigation */}
+       
                 <div className="calendar-nav">
                   <button 
                     className="nav-btn"
@@ -162,21 +187,19 @@ function CalendarPage() {
                   </button>
                 </div>
 
-                {/* Calendar Grid */}
                 <div className="calendar-grid">
-                  {/* Day headers */}
+         
                   {dayNames.map(day => (
                     <div key={day} className="day-header">
                       {day}
                     </div>
                   ))}
                   
-                  {/* Calendar days */}
+
                   {boxes}
                 </div>
               </div>
 
-              {/* Appointments Sidebar */}
               <div className="appointments-sidebar">
                 <div className="sidebar-header">
                   <h3>Appointments</h3>
@@ -207,16 +230,42 @@ function CalendarPage() {
 
                     return selectedAppointments.map((appointment, index) => (
                       <div key={index} className="appointment-card">
-                        <div className="appointment-time-large">
-                          {formatTime(appointment.time)}
+                        <div className="appointment-main-content">
+                          <div className="appointment-time-large">
+                            {formatTime(appointment.time)}
+                          </div>
+                          <div className="appointment-info">
+                            <div className="patient-name-large">{appointment.patient}</div>
+                            <div className="doctor-name-large">Dr. {appointment.doctor}</div>
+                          </div>
+                          <div className="appointment-status-large">
+                            {isPastDate ? 'Completed' : 'Scheduled'}
+                          </div>
                         </div>
-                        <div className="appointment-info">
-                          <div className="patient-name-large">{appointment.patient}</div>
-                          <div className="doctor-name-large">Dr. {appointment.doctor}</div>
-                        </div>
-                        <div className="appointment-status-large">
-                          {isPastDate ? 'Completed' : 'Scheduled'}
-                        </div>
+                        {!isPastDate && (
+                          <div className="appointment-actions">
+                            <button 
+                              className="action-btn edit-btn"
+                              onClick={() => startEditAppointment(appointment, index)}
+                              title="Edit Appointment"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                              </svg>
+                              Edit
+                            </button>
+                            <button 
+                              className="action-btn delete-btn"
+                              onClick={() => handleDeleteAppointment(selectedViewDate, index)}
+                              title="Delete Appointment"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                              </svg>
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ));
                   })()}
@@ -245,12 +294,22 @@ function CalendarPage() {
               </div>
             </div>
 
-            {/* Appointment Form Modal */}
             {selectedDate && (
               <AppointmentForm
                 date={selectedDate}
-                onClose={() => setSelectedDate(null)}
-                onSave={handleAddAppointment}
+                editingAppointment={editingAppointment}
+                onClose={() => {
+                  setSelectedDate(null);
+                  setEditingAppointment(null);
+                }}
+                onSave={(date, data) => {
+                  if (editingAppointment) {
+                    handleEditAppointment(date, editingAppointment.index, data);
+                  } else {
+                    handleAddAppointment(date, data);
+                  }
+                  setEditingAppointment(null);
+                }}
               />
             )}
           </div>
@@ -260,9 +319,10 @@ function CalendarPage() {
           {`
             .calendar-page {
               height: 100vh;
-              background-color: #f5f5f5;
+              background-color: var(--background-secondary);
               font-family: var(--body-font);
               overflow: hidden;
+              color: var(--text-color);
             }
 
             .calendar-container {
@@ -281,10 +341,10 @@ function CalendarPage() {
 
             .calendar-section {
               flex: 1;
-              background: white;
+              background: var(--card-background);
               border-radius: 8px;
               padding: 15px;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              box-shadow: var(--shadow);
               display: flex;
               flex-direction: column;
               overflow: hidden;
@@ -296,13 +356,13 @@ function CalendarPage() {
               align-items: center;
               margin-bottom: 15px;
               padding-bottom: 10px;
-              border-bottom: 1px solid #e0e0e0;
+              border-bottom: 1px solid var(--border-color);
               flex-shrink: 0;
             }
 
             .nav-btn {
-              background-color: #f8f9fa;
-              border: 1px solid #ddd;
+              background-color: var(--background-tertiary);
+              border: 1px solid var(--border-color);
               width: 40px;
               height: 40px;
               border-radius: 50%;
@@ -310,16 +370,16 @@ function CalendarPage() {
               font-weight: bold;
               cursor: pointer;
               transition: all 0.2s ease;
-              color: #333;
+              color: var(--text-color);
               display: flex;
               align-items: center;
               justify-content: center;
             }
 
             .nav-btn:hover {
-              background-color: #009688;
+              background-color: var(--primary-color);
               color: white;
-              border-color: #009688;
+              border-color: var(--primary-color);
               transform: scale(1.05);
             }
 
@@ -327,14 +387,14 @@ function CalendarPage() {
               font-family: var(--heading-font);
               font-size: 1.5rem;
               font-weight: 600;
-              color: #333;
+              color: var(--text-color);
               margin: 0;
             }
 
             .calendar-grid {
               display: grid;
               grid-template-columns: repeat(7, 1fr);
-              border: 1px solid #ddd;
+              border: 1px solid var(--border-color);
               border-radius: 4px;
               overflow: hidden;
               flex: 1;
@@ -342,14 +402,14 @@ function CalendarPage() {
             }
 
             .day-header {
-              background-color: #f8f9fa;
-              color: #666;
+              background-color: var(--background-tertiary);
+              color: var(--text-secondary);
               padding: 8px 4px;
               text-align: center;
               font-weight: 600;
               font-size: 0.75rem;
-              border-right: 1px solid #ddd;
-              border-bottom: 1px solid #ddd;
+              border-right: 1px solid var(--border-color);
+              border-bottom: 1px solid var(--border-color);
             }
 
             .day-header:last-child {
@@ -357,10 +417,10 @@ function CalendarPage() {
             }
 
             .calendar-day {
-              background-color: white;
+              background-color: var(--card-background);
               padding: 6px;
-              border-right: 1px solid #ddd;
-              border-bottom: 1px solid #ddd;
+              border-right: 1px solid var(--border-color);
+              border-bottom: 1px solid var(--border-color);
               position: relative;
               cursor: pointer;
               display: flex;
@@ -370,19 +430,20 @@ function CalendarPage() {
             }
 
             .calendar-day.current-month {
-              background-color: white;
+              background-color: var(--card-background);
             }
 
             .calendar-day.prev-month,
             .calendar-day.next-month {
-              background-color: #f9f9f9;
+              background-color: var(--background-tertiary);
               cursor: default;
               pointer-events: none;
+              opacity: 0.5;
             }
 
             .calendar-day.prev-month .day-number,
             .calendar-day.next-month .day-number {
-              color: #ccc;
+              color: var(--muted-text-color);
               font-weight: 400;
             }
 
@@ -391,58 +452,59 @@ function CalendarPage() {
             }
 
             .calendar-day.current-month:hover {
-              background-color: #f8f9fa;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              background-color: var(--background-tertiary);
+              box-shadow: var(--shadow);
             }
 
             .calendar-day.past {
-              background-color: #fafafa;
+              background-color: var(--background-tertiary);
               opacity: 0.7;
               cursor: default;
             }
 
             .calendar-day.past .day-number {
-              color: #999;
+              color: var(--muted-text-color);
               font-weight: 500;
             }
 
             .calendar-day.past .appointment-item {
-              background-color: #e0e0e0;
-              color: #757575;
-              border-left-color: #bdbdbd;
+              background-color: var(--border-color);
+              color: var(--text-secondary);
+              border-left-color: var(--muted-text-color);
             }
 
             .calendar-day.past:hover {
-              background-color: #f0f0f0;
+              background-color: var(--background-tertiary);
               opacity: 0.8;
               box-shadow: none;
             }
 
             .calendar-day.today {
-              background-color: #e8f5e8;
+              background-color: rgba(38, 166, 154, 0.1);
+              border: 2px solid var(--primary-color);
             }
 
             .calendar-day.selected {
-              background-color: #e3f2fd;
+              background-color: rgba(25, 118, 210, 0.1);
               border: 2px solid #1976d2;
             }
 
             .calendar-day.selected.past {
-              background-color: #f3e5f5;
+              background-color: rgba(156, 39, 176, 0.1);
               border-color: #9c27b0;
             }
 
             .day-number {
               font-weight: 700;
               font-size: 1rem;
-              color: #333;
+              color: var(--text-color);
               margin-bottom: 4px;
               flex-shrink: 0;
               text-align: left;
             }
 
             .calendar-day.today .day-number {
-              color: #009688;
+              color: var(--primary-color);
               font-weight: 800;
             }
 
@@ -460,7 +522,7 @@ function CalendarPage() {
             }
 
             .appointment-item {
-              background-color: #e3f2fd;
+              background-color: rgba(25, 118, 210, 0.1);
               color: #1976d2;
               padding: 2px 4px;
               border-radius: 3px;
@@ -489,16 +551,16 @@ function CalendarPage() {
             /* Appointments Sidebar */
             .appointments-sidebar {
               width: 280px;
-              background-color: white;
+              background-color: var(--card-background);
               border-radius: 8px;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              box-shadow: var(--shadow);
               display: flex;
               flex-direction: column;
               overflow: hidden;
             }
 
             .sidebar-header {
-              background-color: #009688;
+              background-color: var(--primary-color);
               color: white;
               padding: 15px;
               border-radius: 8px 8px 0 0;
@@ -526,30 +588,43 @@ function CalendarPage() {
             .no-appointments-selected {
               text-align: center;
               padding: 20px 10px;
-              color: #999;
+              color: var(--muted-text-color);
               font-size: 0.85rem;
             }
 
             .appointment-card {
-              background-color: #f8f9fa;
-              border: 1px solid #e0e0e0;
-              border-radius: 4px;
-              padding: 8px;
-              margin-bottom: 6px;
+              background-color: var(--background-tertiary);
+              border: 1px solid var(--border-color);
+              border-radius: 8px;
+              padding: 0;
+              margin-bottom: 8px;
+              transition: all 0.2s ease;
+              overflow: hidden;
+            }
+
+            .appointment-card:hover {
+              box-shadow: var(--shadow-hover);
+              transform: translateY(-1px);
+              border-color: var(--border-light);
+            }
+
+            .appointment-main-content {
               display: flex;
               align-items: center;
               gap: 8px;
+              padding: 12px;
             }
 
             .appointment-time-large {
-              background-color: #e8f5e8;
-              color: #009688;
-              padding: 4px 6px;
-              border-radius: 4px;
+              background-color: rgba(38, 166, 154, 0.1);
+              color: var(--primary-color);
+              padding: 6px 8px;
+              border-radius: 6px;
               font-weight: 600;
               font-size: 0.75rem;
-              min-width: 50px;
+              min-width: 60px;
               text-align: center;
+              flex-shrink: 0;
             }
 
             .appointment-info {
@@ -558,30 +633,72 @@ function CalendarPage() {
 
             .patient-name-large {
               font-weight: 600;
-              font-size: 0.8rem;
-              margin-bottom: 1px;
-              color: #333;
+              font-size: 0.85rem;
+              margin-bottom: 2px;
+              color: var(--text-color);
             }
 
             .doctor-name-large {
-              color: #666;
-              font-size: 0.7rem;
+              color: var(--text-secondary);
+              font-size: 0.75rem;
             }
 
             .appointment-status-large {
-              background-color: #e3f2fd;
+              background-color: rgba(25, 118, 210, 0.1);
               color: #1976d2;
-              padding: 2px 6px;
-              border-radius: 8px;
-              font-size: 0.65rem;
+              padding: 4px 8px;
+              border-radius: 12px;
+              font-size: 0.7rem;
               font-weight: 500;
+              flex-shrink: 0;
+            }
+
+            .appointment-actions {
+              display: flex;
+              gap: 0;
+              border-top: 1px solid var(--border-color);
+              background-color: var(--background-tertiary);
+            }
+
+            .action-btn {
+              flex: 1;
+              padding: 8px 12px;
+              background: none;
+              border: none;
+              cursor: pointer;
+              font-size: 0.75rem;
+              font-weight: 500;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 4px;
+              transition: all 0.2s ease;
+              color: var(--text-secondary);
+            }
+
+            .action-btn:hover {
+              background-color: var(--card-background);
+            }
+
+            .edit-btn {
+              border-right: 1px solid var(--border-color);
+            }
+
+            .edit-btn:hover {
+              color: #1976d2;
+              background-color: rgba(25, 118, 210, 0.1);
+            }
+
+            .delete-btn:hover {
+              color: #d32f2f;
+              background-color: rgba(211, 47, 47, 0.1);
             }
 
             .add-appointment {
               width: calc(100% - 24px);
               margin: 0 12px 12px 12px;
               padding: 8px;
-              background-color: #009688;
+              background-color: var(--primary-color);
               color: white;
               border: none;
               border-radius: 4px;
@@ -592,12 +709,12 @@ function CalendarPage() {
             }
 
             .add-appointment:hover {
-              background-color: #00796B;
+              background-color: var(--primary-dark);
             }
 
             .past-date-notice {
               font-size: 0.75rem;
-              color: #999;
+              color: var(--muted-text-color);
               margin-top: 5px;
               font-style: italic;
             }
@@ -605,10 +722,10 @@ function CalendarPage() {
             .past-date-button {
               padding: 12px;
               margin: 0 12px 12px 12px;
-              background-color: #f5f5f5;
+              background-color: var(--background-tertiary);
               border-radius: 4px;
               text-align: center;
-              color: #999;
+              color: var(--muted-text-color);
               font-size: 0.8rem;
               font-style: italic;
             }

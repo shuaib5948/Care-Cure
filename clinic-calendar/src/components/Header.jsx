@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import DarkModeToggle from './DarkModeToggle';
 
 function Header() {
   const navigate = useNavigate();
@@ -23,11 +24,12 @@ function Header() {
         </div>
         <div className="clinic-info">
           <h1>Care & Cure</h1>
-          <p>Appointment Management System</p>
+          <p>Your Health, Our Priority</p>
         </div>
       </div>
 
       <div className="header-right">
+        <DarkModeToggle className="header-dark-toggle" />
         <button className="logout-btn" onClick={handleLogout}>
           Logout
         </button>
@@ -36,13 +38,13 @@ function Header() {
       <style>
         {`
           .header {
-            background: linear-gradient(135deg, #009688 0%, #00796B 100%);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -78,6 +80,11 @@ function Header() {
           .header-right {
             display: flex;
             align-items: center;
+            gap: 15px;
+          }
+
+          .header-dark-toggle {
+            margin-right: 5px;
           }
 
           .logout-btn {
@@ -121,6 +128,14 @@ function Header() {
               padding: 8px 16px;
               font-size: 0.9rem;
             }
+
+            .header-right {
+              gap: 10px;
+            }
+
+            .header-dark-toggle {
+              margin-right: 0;
+            }
           }
 
           @media (max-width: 480px) {
@@ -144,6 +159,10 @@ function Header() {
             .logout-btn {
               padding: 6px 12px;
               font-size: 0.85rem;
+            }
+
+            .header-right {
+              gap: 8px;
             }
           }
         `}

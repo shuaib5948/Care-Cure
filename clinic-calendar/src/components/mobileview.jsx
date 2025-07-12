@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import AppointmentForm from './appointmentform';
 
-function MobileView({ appointments, onAddAppointment }) {
+function MobileView({ appointments, onAddAppointment, onEditAppointment, onDeleteAppointment }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
+  const [editingAppointment, setEditingAppointment] = useState(null);
 
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', { 
@@ -14,7 +15,6 @@ function MobileView({ appointments, onAddAppointment }) {
     });
   };
 
-  // Split date formatting into two parts
   const formatDateParts = (date) => {
     const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
     const dateString = date.toLocaleDateString('en-US', { 
@@ -39,7 +39,6 @@ function MobileView({ appointments, onAddAppointment }) {
   const dayAppointments = appointments[dateKey] || [];
   const isPastDate = currentDate < new Date().setHours(0, 0, 0, 0);
 
-  // Helper function to convert 24-hour time to 12-hour AM/PM format
   const formatTime = (time24) => {
     if (!time24) return '';
     const [hours, minutes] = time24.split(':');
@@ -51,9 +50,28 @@ function MobileView({ appointments, onAddAppointment }) {
 
   const { weekday, dateString } = formatDateParts(currentDate);
 
+  function handleEditAppointment(appointmentIndex, newData) {
+    if (onEditAppointment) {
+      onEditAppointment(currentDate, appointmentIndex, newData);
+    }
+  }
+
+  function handleDeleteAppointment(appointmentIndex) {
+    if (window.confirm('Are you sure you want to delete this appointment?')) {
+      if (onDeleteAppointment) {
+        onDeleteAppointment(currentDate, appointmentIndex);
+      }
+    }
+  }
+
+  function startEditAppointment(appointment, index) {
+    setEditingAppointment({ ...appointment, index });
+    setSelectedDate(currentDate);
+  }
+
   return (
     <div className="mobile-view">
-      {/* Date Navigation */}
+
       <div className="date-navigation">
         <button className="nav-button" onClick={() => navigateDate(-1)}>
           ←
@@ -73,7 +91,7 @@ function MobileView({ appointments, onAddAppointment }) {
         </button>
       </div>
 
-      {/* Appointments List */}
+ 
       <div className="appointments-section">
         <h3>Appointments ({dayAppointments.length})</h3>
         {dayAppointments.length === 0 ? (
@@ -84,23 +102,49 @@ function MobileView({ appointments, onAddAppointment }) {
           <div className="appointments-list">
             {dayAppointments.map((appointment, index) => (
               <div key={index} className="appointment-card">
-                <div className="appointment-time">
-                  {formatTime(appointment.time)}
+                <div className="appointment-main-content">
+                  <div className="appointment-time">
+                    {formatTime(appointment.time)}
+                  </div>
+                  <div className="appointment-details">
+                    <div className="patient-name">{appointment.patient}</div>
+                    <div className="doctor-name">Dr. {appointment.doctor}</div>
+                  </div>
+                  <div className="appointment-status">
+                    {isPastDate ? 'Completed' : 'Scheduled'}
+                  </div>
                 </div>
-                <div className="appointment-details">
-                  <div className="patient-name">{appointment.patient}</div>
-                  <div className="doctor-name">Dr. {appointment.doctor}</div>
-                </div>
-                <div className="appointment-status">
-                  {isPastDate ? 'Completed' : 'Scheduled'}
-                </div>
+                {!isPastDate && (
+                  <div className="appointment-actions">
+                    <button 
+                      className="action-btn edit-btn"
+                      onClick={() => startEditAppointment(appointment, index)}
+                      title="Edit Appointment"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                      </svg>
+                      Edit
+                    </button>
+                    <button 
+                      className="action-btn delete-btn"
+                      onClick={() => handleDeleteAppointment(index)}
+                      title="Delete Appointment"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                      </svg>
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Fixed Bottom Button */}
+
       <div className="bottom-action-bar">
         {!isPastDate ? (
           <button
@@ -116,12 +160,22 @@ function MobileView({ appointments, onAddAppointment }) {
         )}
       </div>
 
-      {/* Appointment Form Modal */}
       {selectedDate && (
         <AppointmentForm
           date={selectedDate}
-          onClose={() => setSelectedDate(null)}
-          onSave={onAddAppointment}
+          editingAppointment={editingAppointment}
+          onClose={() => {
+            setSelectedDate(null);
+            setEditingAppointment(null);
+          }}
+          onSave={(date, data) => {
+            if (editingAppointment) {
+              handleEditAppointment(editingAppointment.index, data);
+            } else {
+              onAddAppointment(date, data);
+            }
+            setEditingAppointment(null);
+          }}
         />
       )}
 
@@ -129,10 +183,11 @@ function MobileView({ appointments, onAddAppointment }) {
         {`
           .mobile-view {
             min-height: calc(100vh - 80px);
-            background-color: #f8f9fa;
+            background-color: var(--background-secondary);
             font-family: var(--body-font);
             padding-top: 20px;
             padding-bottom: 80px;
+            color: var(--text-color);
           }
 
           .date-navigation {
@@ -140,8 +195,8 @@ function MobileView({ appointments, onAddAppointment }) {
             align-items: center;
             justify-content: space-between;
             padding: 20px;
-            background-color: white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background-color: var(--card-background);
+            box-shadow: var(--shadow);
             margin: 0 10px;
             border-radius: 12px;
             margin-bottom: 20px;
@@ -162,7 +217,7 @@ function MobileView({ appointments, onAddAppointment }) {
 
           .nav-button:hover {
             transform: scale(1.1);
-            box-shadow: 0 2px 8px rgba(0, 150, 136, 0.4);
+            box-shadow: 0 2px 8px rgba(38, 166, 154, 0.4);
           }
 
           .current-date {
@@ -197,7 +252,7 @@ function MobileView({ appointments, onAddAppointment }) {
 
           .today-button {
             padding: 12px 24px;
-            background-color: white;
+            background-color: var(--card-background);
             border: 2px solid var(--primary-color);
             color: var(--primary-color);
             border-radius: 8px;
@@ -237,25 +292,37 @@ function MobileView({ appointments, onAddAppointment }) {
           }
 
           .appointment-card {
-            background-color: white;
+            background-color: var(--card-background);
             border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 0;
+            box-shadow: var(--shadow);
             border-left: 4px solid var(--primary-color);
+            transition: all 0.2s ease;
+            overflow: hidden;
+          }
+
+          .appointment-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+          }
+
+          .appointment-main-content {
             display: flex;
             align-items: center;
             gap: 15px;
+            padding: 16px;
           }
 
           .appointment-time {
-            background-color: #e8f5e8;
+            background-color: rgba(38, 166, 154, 0.1);
             color: var(--primary-color);
             padding: 8px 12px;
             border-radius: 8px;
             font-weight: var(--body-weight-medium);
             font-size: 0.9rem;
-            min-width: 60px;
+            min-width: 70px;
             text-align: center;
+            flex-shrink: 0;
           }
 
           .appointment-details {
@@ -270,17 +337,59 @@ function MobileView({ appointments, onAddAppointment }) {
           }
 
           .doctor-name {
-            color: var(--muted-text-color);
+            color: var(--text-secondary);
             font-size: 0.9rem;
           }
 
           .appointment-status {
-            background-color: #e3f2fd;
+            background-color: rgba(25, 118, 210, 0.1);
             color: #1976d2;
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 12px;
             font-size: 0.75rem;
             font-weight: var(--body-weight-medium);
+            flex-shrink: 0;
+          }
+
+          .appointment-actions {
+            display: flex;
+            gap: 0;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--background-tertiary);
+          }
+
+          .action-btn {
+            flex: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+          }
+
+          .action-btn:hover {
+            background-color: var(--card-background);
+          }
+
+          .edit-btn {
+            border-right: 1px solid var(--border-color);
+          }
+
+          .edit-btn:hover {
+            color: #1976d2;
+            background-color: rgba(25, 118, 210, 0.1);
+          }
+
+          .delete-btn:hover {
+            color: #d32f2f;
+            background-color: rgba(211, 47, 47, 0.1);
           }
 
           .bottom-action-bar {
@@ -288,10 +397,11 @@ function MobileView({ appointments, onAddAppointment }) {
             bottom: 0;
             left: 0;
             right: 0;
-            background-color: white;
+            background-color: var(--card-background);
             padding: 15px;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
             z-index: 100;
+            border-top: 1px solid var(--border-color);
           }
 
           .add-appointment-button {
@@ -308,16 +418,16 @@ function MobileView({ appointments, onAddAppointment }) {
           }
 
           .add-appointment-button:hover {
-            background-color: #00796B;
+            background-color: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 150, 136, 0.3);
+            box-shadow: 0 4px 12px rgba(38, 166, 154, 0.3);
           }
 
           .past-date-notice {
             width: 100%;
             padding: 15px;
-            background-color: #f5f5f5;
-            color: #999;
+            background-color: var(--background-tertiary);
+            color: var(--muted-text-color);
             border-radius: 8px;
             font-size: 1rem;
             text-align: center;
