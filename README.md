@@ -7,6 +7,24 @@ This is a frontend-only React application created for clinic staff to manage doc
 
 👉 [https://care-cure-gamma.vercel.app/](https://care-cure-gamma.vercel.app/)
 
+
+## 🖼️ Screenshots
+
+### 1. Login Page - Mobile View
+![Login Mobile](./public/screenshots/1.png)
+
+### 2. Calendar Page - Mobile View
+![Calendar Mobile](./public/screenshots/2.png)
+
+### 3. Appointment Form
+![Appointment Form](./public/screenshots/3.png)
+
+### 4. Login Page - Desktop View
+![Login Desktop](./public/screenshots/4.png)
+
+### 5. Calendar Page - Desktop View
+![Calendar Desktop](./public/screenshots/5.png)
+
 ## ✅ Features
 
 - Login screen with mock credentials
