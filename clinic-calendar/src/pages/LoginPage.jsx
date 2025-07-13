@@ -101,12 +101,14 @@ function LoginPage() {
             color: white;
             padding: 40px 20px 60px 20px;
             text-align: center;
-            border-bottom-left-radius: 60px;
-            border-bottom-right-radius: 60px;
+            border-bottom-left-radius: 80px;
+            border-bottom-right-radius: 80px;
             width: 100vw;
             position: relative;
             left: 50%;
             transform: translateX(-50%);
+            margin-left: calc(-50vw + 50%);
+            margin-right: calc(-50vw + 50%);
           }
 
           .logo-content h1 {
@@ -139,8 +141,9 @@ function LoginPage() {
             text-align: center;
             background-color: var(--card-background);
             padding: 20px;
-            border-radius: 12px;
+            border-radius: 20px;
             box-shadow: var(--shadow);
+            margin: 0 auto;
           }
 
           .form-container h2 {
@@ -308,14 +311,35 @@ function LoginPage() {
           }
 
           @media (max-width: 480px) {
+            .login-container {
+              overflow-x: hidden;
+            }
+
+            .welcome-section {
+              padding: 30px 15px 50px 15px;
+              border-bottom-left-radius: 40px;
+              border-bottom-right-radius: 40px;
+              width: 100vw;
+              left: 50%;
+              transform: translateX(-50%);
+            }
+
             .theme-toggle-container {
               top: 15px;
               right: 15px;
             }
 
+            .form-section {
+              padding: 30px 15px;
+            }
+
             .form-container {
               padding: 15px;
               margin: 0 10px;
+              max-width: calc(100% - 20px);
+              background-color: transparent;
+              box-shadow: none;
+              border-radius: 0;
             }
           }
         `}
