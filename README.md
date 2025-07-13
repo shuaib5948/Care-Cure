@@ -11,19 +11,19 @@ This is a frontend-only React application created for clinic staff to manage doc
 ## 🖼️ Screenshots
 
 ### 1. Login Page - Mobile View
-![Login Mobile](./public/screenshots/1.png)
+![Login Mobile](clinic-calendar/public/screenshots/1.PNG)
 
 ### 2. Calendar Page - Mobile View
-![Calendar Mobile](./public/screenshots/2.png)
+![Calendar Mobile](clinic-calendar/public/screenshots/2.PNG)
 
 ### 3. Appointment Form
-![Appointment Form](./public/screenshots/3.png)
+![Appointment Form](clinic-calendar/public/screenshots/3.PNG)
 
 ### 4. Login Page - Desktop View
-![Login Desktop](./public/screenshots/4.png)
+![Login Desktop](clinic-calendar/public/screenshots/4.PNG)
 
 ### 5. Calendar Page - Desktop View
-![Calendar Desktop](./public/screenshots/5.png)
+![Calendar Desktop](clinic-calendar/public/screenshots/5.PNG)
 
 ## ✅ Features
 
